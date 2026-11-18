@@ -10,7 +10,6 @@ import android.view.ViewGroup
 import androidx.annotation.IdRes
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.matchParentSize
@@ -329,7 +328,6 @@ private fun CouiNativeNavigationBar(
 	}
 }
 
-@androidx.annotation.DrawableRes
 private fun FloatingNavBarItem.iconResources(): Pair<Int, Int> = when (id) {
 	org.koitharu.kotatsu.R.id.nav_history ->
 		org.koitharu.kotatsu.R.drawable.ic_history to org.koitharu.kotatsu.R.drawable.ic_history_checked
