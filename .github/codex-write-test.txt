@@ -1,2 +1,0 @@
-Temporary write-permission verification.
-This file is safe to delete after the test.
