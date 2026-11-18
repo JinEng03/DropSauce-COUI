@@ -94,6 +94,7 @@ class FloatingBottomNavigationView @JvmOverloads constructor(
 							items = items,
 							selectedId = selectedId,
 							showContinue = showContinue,
+							showLabels = labeled,
 							onItemSelected = { id -> this@FloatingBottomNavigationView.selectedItemId = id },
 							onItemReselected = { id ->
 								val menuItem = menu.findItem(id) ?: return@CouiNativeNavigationBar
@@ -280,6 +281,7 @@ private fun CouiNativeNavigationBar(
 	items: List<FloatingNavBarItem>,
 	selectedId: Int,
 	showContinue: Boolean,
+	showLabels: Boolean,
 	onItemSelected: (Int) -> Unit,
 	onItemReselected: (Int) -> Unit,
 	onContinueClick: () -> Unit,
@@ -296,7 +298,7 @@ private fun CouiNativeNavigationBar(
 		}
 		val (normalIcon, selectedIcon) = item.iconResources()
 		CouiNavigationItem(
-			title = accessibleTitle,
+			title = if (showLabels) accessibleTitle else "",
 			icon = ImageVector.vectorResource(normalIcon),
 			selectedIcon = ImageVector.vectorResource(selectedIcon),
 		)
