@@ -29,7 +29,7 @@ android {
 
 	defaultConfig {
 		applicationId = 'org.haziffe.dropsauce'
-		minSdk = 26
+		minSdk = 31
 		targetSdk = 37
 		versionCode = 82
 		versionName = '1.1.4'
@@ -227,6 +227,8 @@ dependencies {
     implementation libs.androidx.compose.ui
     implementation libs.androidx.compose.foundation
     implementation libs.androidx.compose.material3
+	// ColorOS 17-inspired COUI components and Material 3 theme adapter.
+	implementation 'io.github.itoseo:coui-material3:0.0.1-alpha12'
     implementation libs.androidx.compose.activity
     implementation libs.androidx.graphics.shapes
 
