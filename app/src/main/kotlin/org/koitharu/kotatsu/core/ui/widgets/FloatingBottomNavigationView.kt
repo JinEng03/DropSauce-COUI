@@ -3,21 +3,35 @@ package org.koitharu.kotatsu.core.ui.widgets
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.IdRes
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
+import com.itos.coui.backdrop.couiBackdrop
+import com.itos.coui.backdrop.rememberCouiBackdrop
+import com.itos.coui.navigation.CouiNavigationItem
+import com.itos.coui.navigation.NavigationBar
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.koitharu.kotatsu.core.prefs.NavItem
 import org.koitharu.kotatsu.main.ui.nav.FloatingNavBar
@@ -76,21 +90,35 @@ class FloatingBottomNavigationView @JvmOverloads constructor(
 						.padding(horizontal = 12.dp, vertical = 8.dp),
 					contentAlignment = Alignment.Center,
 				) {
-					FloatingNavBar(
-						items = items,
-						selectedId = selectedId,
-						showLabels = labeled,
-						colors = navColors,
-						onItemSelected = { id -> this@FloatingBottomNavigationView.selectedItemId = id },
-						onItemReselected = { id ->
-							val menuItem = menu.findItem(id) ?: return@FloatingNavBar
-							reselectedListener?.invoke(menuItem)
-						},
-						modifier = Modifier.wrapContentWidth(),
-						showContinue = showContinue,
-						onContinueClick = { continueClickListener?.invoke() },
-						onContinueLongClick = { continueLongClickListener?.invoke() },
-					)
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+						CouiNativeNavigationBar(
+							items = items,
+							selectedId = selectedId,
+							showContinue = showContinue,
+							onItemSelected = { id -> this@FloatingBottomNavigationView.selectedItemId = id },
+							onItemReselected = { id ->
+								val menuItem = menu.findItem(id) ?: return@CouiNativeNavigationBar
+								reselectedListener?.invoke(menuItem)
+							},
+							onContinueClick = { continueClickListener?.invoke() },
+						)
+					} else {
+						FloatingNavBar(
+							items = items,
+							selectedId = selectedId,
+							showLabels = labeled,
+							colors = navColors,
+							onItemSelected = { id -> this@FloatingBottomNavigationView.selectedItemId = id },
+							onItemReselected = { id ->
+								val menuItem = menu.findItem(id) ?: return@FloatingNavBar
+								reselectedListener?.invoke(menuItem)
+							},
+							modifier = Modifier.wrapContentWidth(),
+							showContinue = showContinue,
+							onContinueClick = { continueClickListener?.invoke() },
+							onContinueLongClick = { continueLongClickListener?.invoke() },
+						)
+					}
 				}
 			}
 		}
@@ -244,4 +272,80 @@ class FloatingBottomNavigationView @JvmOverloads constructor(
 		const val MAX_RENDERED_ITEMS = 6
 		private const val LEGACY_ITEM_OFFSET_DP = 8f
 	}
+}
+
+
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+@Composable
+private fun CouiNativeNavigationBar(
+	items: List<FloatingNavBarItem>,
+	selectedId: Int,
+	showContinue: Boolean,
+	onItemSelected: (Int) -> Unit,
+	onItemReselected: (Int) -> Unit,
+	onContinueClick: () -> Unit,
+) {
+	if (items.isEmpty()) return
+	val backdrop = rememberCouiBackdrop()
+	val selectedIndex = items.indexOfFirst { it.id == selectedId }.coerceAtLeast(0)
+	val couiItems = items.map { item ->
+		val title = stringResource(item.titleRes)
+		val accessibleTitle = when {
+			item.badgeCount < 0 -> "$title •"
+			item.badgeCount > 0 -> "$title ${item.badgeCount}"
+			else -> title
+		}
+		val (normalIcon, selectedIcon) = item.iconResources()
+		CouiNavigationItem(
+			title = accessibleTitle,
+			icon = ImageVector.vectorResource(normalIcon),
+			selectedIcon = ImageVector.vectorResource(selectedIcon),
+		)
+	}
+	Box(
+		modifier = Modifier.fillMaxWidth(),
+		contentAlignment = Alignment.Center,
+	) {
+		Box(
+			modifier = Modifier
+				.matchParentSize()
+				.couiBackdrop(backdrop)
+				.background(MaterialTheme.colorScheme.surface),
+		)
+		NavigationBar(
+			modifier = Modifier.wrapContentWidth(),
+			backdrop = backdrop,
+			items = couiItems,
+			selectedIndex = selectedIndex,
+			rightIcon = ImageVector.vectorResource(org.koitharu.kotatsu.R.drawable.ic_read),
+			rightDescription = stringResource(org.koitharu.kotatsu.R.string._continue),
+			rightVisible = showContinue,
+			onRightClick = onContinueClick,
+			onSelection = { index ->
+				val itemId = items[index].id
+				if (itemId == selectedId) onItemReselected(itemId) else onItemSelected(itemId)
+			},
+		)
+	}
+}
+
+@androidx.annotation.DrawableRes
+private fun FloatingNavBarItem.iconResources(): Pair<Int, Int> = when (id) {
+	org.koitharu.kotatsu.R.id.nav_history ->
+		org.koitharu.kotatsu.R.drawable.ic_history to org.koitharu.kotatsu.R.drawable.ic_history_checked
+	org.koitharu.kotatsu.R.id.nav_favorites ->
+		org.koitharu.kotatsu.R.drawable.ic_heart_outline to org.koitharu.kotatsu.R.drawable.ic_heart
+	org.koitharu.kotatsu.R.id.nav_local ->
+		org.koitharu.kotatsu.R.drawable.ic_storage to org.koitharu.kotatsu.R.drawable.ic_storage_checked
+	org.koitharu.kotatsu.R.id.nav_explore ->
+		org.koitharu.kotatsu.R.drawable.ic_explore_normal to org.koitharu.kotatsu.R.drawable.ic_explore_checked
+	org.koitharu.kotatsu.R.id.nav_suggestions ->
+		org.koitharu.kotatsu.R.drawable.ic_suggestion to org.koitharu.kotatsu.R.drawable.ic_suggestion_checked
+	org.koitharu.kotatsu.R.id.nav_feed ->
+		org.koitharu.kotatsu.R.drawable.ic_feed to org.koitharu.kotatsu.R.drawable.ic_feed_checked
+	org.koitharu.kotatsu.R.id.nav_updated ->
+		org.koitharu.kotatsu.R.drawable.ic_updated to org.koitharu.kotatsu.R.drawable.ic_updated_checked
+	org.koitharu.kotatsu.R.id.nav_bookmarks ->
+		org.koitharu.kotatsu.R.drawable.ic_bookmark to org.koitharu.kotatsu.R.drawable.ic_bookmark_checked
+	else -> org.koitharu.kotatsu.R.drawable.ic_history to org.koitharu.kotatsu.R.drawable.ic_history_checked
 }
