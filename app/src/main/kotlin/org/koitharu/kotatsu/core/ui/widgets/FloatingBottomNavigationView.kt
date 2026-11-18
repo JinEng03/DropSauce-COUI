@@ -9,15 +9,23 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.IdRes
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.matchParentSize
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -26,6 +34,9 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.getBottom
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import com.itos.coui.backdrop.couiBackdrop
 import com.itos.coui.backdrop.rememberCouiBackdrop
@@ -101,6 +112,7 @@ class FloatingBottomNavigationView @JvmOverloads constructor(
 								reselectedListener?.invoke(menuItem)
 							},
 							onContinueClick = { continueClickListener?.invoke() },
+							onContinueLongClick = { continueLongClickListener?.invoke() },
 						)
 					} else {
 						FloatingNavBar(
@@ -276,6 +288,7 @@ class FloatingBottomNavigationView @JvmOverloads constructor(
 
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CouiNativeNavigationBar(
 	items: List<FloatingNavBarItem>,
@@ -285,6 +298,7 @@ private fun CouiNativeNavigationBar(
 	onItemSelected: (Int) -> Unit,
 	onItemReselected: (Int) -> Unit,
 	onContinueClick: () -> Unit,
+	onContinueLongClick: () -> Unit,
 ) {
 	if (items.isEmpty()) return
 	val backdrop = rememberCouiBackdrop()
@@ -321,12 +335,42 @@ private fun CouiNativeNavigationBar(
 			rightIcon = ImageVector.vectorResource(org.koitharu.kotatsu.R.drawable.ic_read),
 			rightDescription = stringResource(org.koitharu.kotatsu.R.string._continue),
 			rightVisible = showContinue,
-			onRightClick = onContinueClick,
 			onSelection = { index ->
 				val itemId = items[index].id
 				if (itemId == selectedId) onItemReselected(itemId) else onItemSelected(itemId)
 			},
 		)
+		if (showContinue) {
+			val density = LocalDensity.current
+			val bottomMargin = if (WindowInsets.tappableElement.getBottom(density) > 0) 0.dp else 8.dp
+			Box(
+				modifier = Modifier
+					.fillMaxWidth()
+					.windowInsetsPadding(
+						WindowInsets.tappableElement.only(
+							WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+						),
+					)
+					.padding(
+						start = 16.dp,
+						end = 16.dp,
+						top = 16.dp,
+						bottom = 16.dp + bottomMargin,
+					),
+				contentAlignment = Alignment.CenterEnd,
+			) {
+				Box(
+					modifier = Modifier
+						.size(56.dp)
+						.combinedClickable(
+							interactionSource = remember { MutableInteractionSource() },
+							indication = null,
+							onClick = onContinueClick,
+							onLongClick = onContinueLongClick,
+						),
+				)
+			}
+		}
 	}
 }
 
